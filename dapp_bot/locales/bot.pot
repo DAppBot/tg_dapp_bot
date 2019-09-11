@@ -1,32 +1,32 @@
 msgid "Анонсы"
-msgstr "Announcements"
+msgstr ""
 
 msgid "Выбор блокчейна"
-msgstr "Choice of the blockchain"
+msgstr ""
 
 msgid "FAQ"
-msgstr "FAQ"
+msgstr ""
 
 msgid "Настройки"
-msgstr "Settings"
+msgstr ""
 
 msgid "Быстрая конвертация"
-msgstr "Fast convert"
+msgstr ""
 
 msgid "Мои кошельки"
-msgstr "My wallets"
+msgstr ""
 
 msgid "Залистить проект"
-msgstr "Solistice project"
+msgstr ""
 
 msgid "Сменить язык"
-msgstr "Change language"
+msgstr ""
 
 msgid "Добавить кошелек"
-msgstr "Add wallet"
+msgstr ""
 
 msgid "Конвертировать"
-msgstr "Convert"
+msgstr ""
 
 msgid "Назад"
 msgstr ""
@@ -37,9 +37,8 @@ msgstr ""
 msgid "Сделать основным"
 msgstr ""
 
-#, fuzzy
 msgid "Удалить кошелек"
-msgstr "Add wallet"
+msgstr ""
 
 msgid "Приватный ключ"
 msgstr ""
@@ -47,9 +46,8 @@ msgstr ""
 msgid "Отмена"
 msgstr ""
 
-#, fuzzy
 msgid "Добавить адрес кошелька"
-msgstr "Send wallet address"
+msgstr ""
 
 msgid "Импортировать приватный ключ"
 msgstr ""
@@ -58,20 +56,18 @@ msgid "Сгенерировать новый кошелек"
 msgstr ""
 
 msgid "Главное меню"
-msgstr "Main menu"
+msgstr ""
 
 msgid "Выберите язык"
-msgstr "Select language"
+msgstr ""
 
-#, fuzzy
 msgid "*Выберите блокчейн*"
-msgstr "Select the blockchain"
+msgstr ""
 
-#, fuzzy
 msgid ""
 "*Мои {bch}-кошельки*\n"
 "\n"
-msgstr "My wallets"
+msgstr ""
 
 msgid "У вас нет добавленных кошельков 😞"
 msgstr ""
@@ -82,22 +78,20 @@ msgstr ""
 msgid "*Баланс: *"
 msgstr ""
 
-#, fuzzy
 msgid "*Задайте имя кошельку*"
-msgstr "*Add wallet*"
+msgstr ""
 
 msgid "Введите имя ниже (не более 20 символов)"
 msgstr ""
 
 msgid "*Добавление кошелька*"
-msgstr "*Add wallet*"
+msgstr ""
 
-#, fuzzy
 msgid "Выберите способ добавления кошелька"
-msgstr "*Add wallet*"
+msgstr ""
 
 msgid "Отправьте адрес кошелька"
-msgstr "Send wallet address"
+msgstr ""
 
 msgid "*Неправильный адрес*"
 msgstr ""
@@ -117,9 +111,8 @@ msgstr ""
 msgid "Вставьте приватный ключ"
 msgstr ""
 
-#, fuzzy
 msgid "*Ваш новый {bch}-кошелек*"
-msgstr "My wallets"
+msgstr ""
 
 msgid "Адрес: "
 msgstr ""
@@ -132,26 +125,4 @@ msgstr ""
 
 msgid "_Рекомендуется удалить сообщение с приватным ключом"
 msgstr ""
-
-#~ msgid "Назад"
-#~ msgstr "Back"
-
-#~ msgid "*Мои кошельки*"
-#~ msgstr "*My wallets*"
-
-#~ msgid "У вас нет добавленных кошельков 😞"
-#~ msgstr ""
-
-#~ msgid "Кошелек добавлен"
-#~ msgstr ""
-
-#~ msgid ""
-#~ "*Добавление кошелька*\n"
-#~ "\n"
-#~ msgstr ""
-#~ "*Add wallet*\n"
-#~ "\n"
-
-#~ msgid "Выберите блокчейн"
-#~ msgstr "Select the blockchain"
 

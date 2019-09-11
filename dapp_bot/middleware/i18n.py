@@ -1,7 +1,9 @@
 from aiogram.contrib.middlewares.i18n import I18nMiddleware
 from aiogram.dispatcher import Dispatcher as dp
+from babel.support import LazyProxy
 from aiogram.types import User
 from exceptions import *
+
 
 
 class CustomI18n(I18nMiddleware):
@@ -13,6 +15,8 @@ class CustomI18n(I18nMiddleware):
         except LocaleNotFound:  # возвращаем локаль, которую вернул телеграм
             return user.locale.language
 
+    def lazy_gettext(self, *args):
+        return LazyProxy(self.gettext, *args, enable_cache=False)
 
 i18n = CustomI18n('bot')
 _ = i18n.gettext
