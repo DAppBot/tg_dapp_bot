@@ -1,27 +1,19 @@
-import random
-
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
 from aiogram.types.reply_keyboard import ReplyKeyboardMarkup
 from aiogram.types.reply_keyboard import ReplyKeyboardRemove
 
-from middleware.i18n import i18n
+from middleware.i18n import _
 from utils import reduction_addr
 
-_ = i18n.gettext
 
 def main_menu_btn():
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
-    #keyboard.add(_('Анонсы'), _('Выбор блокчейна'),
-    #             _('FAQ'), _('Настройки'),
-    #             _('Быстрая конвертация'),
-    #             _('Мои кошельки'), _('Залистить проект')
-    #             )
-    keyboard.add(_('Анонсы'),
-                 _('Мои кошельки'),
-                 _('Настройки'),
-                 _('Партнеры')
-                )
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    keyboard.add(_('Анонсы'), _('Выбор блокчейна'),
+                 _('FAQ'), _('Настройки'),
+                 _('Быстрая конвертация'),
+                 _('Мои кошельки'), _('Залистить проект')
+                 )
     return keyboard
 
 
@@ -69,9 +61,10 @@ def select_bch_inl():
 def list_wallet_inl(wallets, bch):
     keyboard = InlineKeyboardMarkup(row_width=1)
 
-    for ids, name_or_address in wallets:
-
-        keyboard.add(InlineKeyboardButton(reduction_addr(name_or_address),
+    for wallet in wallets:
+        ids = wallet.get('id')
+        address = wallet.get('address')
+        keyboard.add(InlineKeyboardButton(reduction_addr(address),
                                           callback_data='{}_{}_address_info'.format(bch,
                                                                                     ids)))
 
@@ -82,63 +75,26 @@ def list_wallet_inl(wallets, bch):
     return keyboard
 
 
-def wallet_menu_inl(bch, wallet_id, is_subscribe):
+def wallet_menu_inl(bch, address):
+
     keyboard = InlineKeyboardMarkup(row_width=2)
 
-    keyboard.add(InlineKeyboardButton(
-        _('Получать обновления: {status}'.format(status='✅' if is_subscribe else '❌')),
-        callback_data='{}_{}_subscribe_to_updates'.format(bch, wallet_id)))
-
-    keyboard.add(InlineKeyboardButton(_('Указать имя'),
-                                         callback_data='{}_{}_set_address_name'.format(
-                                             bch,
-                                             wallet_id)))
+    keyboard.insert(InlineKeyboardButton(_('Указать имя'),
+                                      callback_data='{}_{}_set_address_name'.format(bch,
+                                                                                    address)))
 
     keyboard.insert(InlineKeyboardButton(_('Сделать основным'),
-                                         callback_data='{}_{}_set_address_as_main'.format(
-                                             bch,
-                                             wallet_id)))
+                                      callback_data='{}_{}_set_address_as_main'.format(
+                                          bch,
+                                          address)))
     keyboard.insert(InlineKeyboardButton(_('Удалить кошелек'),
-                                         callback_data='{}_{}_try_remove_address'.format(
-                                             bch,
-                                             wallet_id)))
+                                      callback_data='{}_{}_remove_address'.format(bch,
+                                                                                  address)))
     keyboard.insert(InlineKeyboardButton(_('Приватный ключ'),
-                                         callback_data='{}_{}_view_private_key'.format(
-                                             bch,
-                                             wallet_id)))
-
-
-    keyboard.add(InlineKeyboardButton(_('Назад'),
-                                         callback_data=f'{bch}_view'))
-    return keyboard
-
-
-def remove_wallet_inl(bch, wallet_id):
-    keyboard = InlineKeyboardMarkup(row_width=2)
-
-    list_buttons = [
-        InlineKeyboardButton(_('Нет'),
-                             callback_data='{}_{}_address_info'.format(bch,
-                                                                       wallet_id)),
-        InlineKeyboardButton(_('Нет'),
-                             callback_data='{}_{}_address_info'.format(bch,
-                                                                       wallet_id)),
-        InlineKeyboardButton(_('Нет'),
-                             callback_data='{}_{}_address_info'.format(bch,
-                                                                       wallet_id)),
-        InlineKeyboardButton(_('Да, удалить'),
-                             callback_data='{}_{}_remove_address'.format(bch,
-                                                                         wallet_id))
-        ]
-    random.shuffle(list_buttons)
-    list_buttons.append(InlineKeyboardButton(_('Назад'),
-                                             callback_data='{}_{}_address_info'.format(
-                                                 bch,
-                                                 wallet_id)))
-
-    for btn in list_buttons:
-        keyboard.insert(btn)
-
+                                      callback_data='{}_{}_view_private_key'.format(bch,
+                                                                                  address)))
+    keyboard.insert(InlineKeyboardButton(_('Назад'),
+                         callback_data=f'{bch}_view'))
     return keyboard
 
 
@@ -155,13 +111,13 @@ def choice_method_add_wallet_inl(bch):
         InlineKeyboardButton(_('Добавить адрес кошелька'),
                              callback_data=f'{bch}_add_bch_wallet'),
         InlineKeyboardButton(_('Импортировать приватный ключ'),
-                             callback_data=f'{bch}_import_private_key'),
-        # InlineKeyboardButton(_('Импортировать seed-фразу'),
+                         callback_data=f'{bch}_import_private_key'),
+        #InlineKeyboardButton(_('Импортировать seed-фразу'),
         #                 callback_data=f'{bch}_import_seed_phrase'),
         InlineKeyboardButton(_('Сгенерировать новый кошелек'),
-                             callback_data=f'{bch}_generate_wallet'),
+                         callback_data=f'{bch}_generate_wallet'),
         InlineKeyboardButton(_('Назад'),
-                             callback_data=f'{bch}_view'))
+                         callback_data=f'{bch}_view'))
     return keyboard
 
 
