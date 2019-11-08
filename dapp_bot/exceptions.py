@@ -3,3 +3,6 @@ class ExistingUser(Exception):
 
 class LocaleNotFound(Exception):
     pass
+
+class PKeyNotFound(Exception):
+    pass

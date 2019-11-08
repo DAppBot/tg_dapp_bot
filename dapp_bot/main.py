@@ -1,33 +1,38 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher, executor
-from aiogram.dispatcher import FSMContext
 # from aiogram.dispatcher.filters.state import StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, CallbackQuery, ChatType
 
-from config import token, db_params, infura_id
-from middleware.i18n import i18n, _
+import utils
+from buttons import *
+from config import token, db_params
 from ethereum import EthereumApi
-from tron import TronApi
 from exceptions import *
 from db import CacheDB
-from buttons import *
-from utils import reduction_addr
+from middleware.i18n import i18n
+from tron import TronApi
+from backend.storage import pkey_storage
+from backend.app import app_coro
 
 bot = Bot(token, parse_mode='markdown')
 storage = MemoryStorage()
+
 dp = Dispatcher(bot, storage=storage)
 
+# для работы локализации
+_, __ = i18n.gettext, i18n.lazy_gettext
 dp.middleware.setup(i18n)
-__ = i18n.lazy_gettext
 
+# подключение к базе
 db = CacheDB()
-# db.create_tables(**db_params)
 db.create_connection(**db_params)
 dp['db'] = db
+# db.create_tables(**db_params)
 
-eth = EthereumApi(infura_id)
+eth = EthereumApi(db, bot)
 trx = TronApi()
 
 list_bch = ['ethereum', 'tron']
@@ -40,10 +45,14 @@ bch_token_names = {'ethereum': 'ETH',
 
 @dp.message_handler(ChatType.is_private, commands=['start'])
 async def on_start_msg(msg: Message):
+
+    new_ref_link = utils.encode_to_base64(msg.chat.id).lower()
+
     try:
         await db.save_new_user(msg.from_user.id,
                                msg.from_user.first_name,
-                               msg.from_user.username)
+                               msg.from_user.username,
+                               new_ref_link, inv_link=msg.get_args() or None)
     except ExistingUser:  # пользователь существует
         text, btn = main_menu()
         await bot.send_message(msg.chat.id, text, reply_markup=btn)
@@ -76,23 +85,19 @@ async def on_settings_btn(msg: Message):
     await select_language(msg)
 
 
-# async def wallets_msg(msg):
-#     eth_w, trx_w = await db.get_user_wallets(msg.chat.id)
-#     text = _('*Мои кошельки*') + '\n'
-#     text += '\n*Tron:*\n' if trx_w else ''
-#     for w in trx_w:
-#         text += '➖`{}`  *{} TRX*\n'.format(reduction_addr(w),
-#                                            await trx.get_balance(w))
-#
-#     text += '\n*Ethereum:*\n' if eth_w else ''
-#     for w in eth_w:
-#         text += '➖`{}`  *{} ETH*\n'.format(reduction_addr(w),
-#                                            await eth.get_balance(w))
-#
-#     if len(text.split('\n')) == 3:
-#         text += _('У вас нет добавленных кошельков 😞')
-#         return text, no_full_wallets_inl()
-#     return text, full_wallets_inl()
+@dp.message_handler(text=__('Партнеры'))
+async def on_partner_btn(msg):
+    ref_link = await db.get_ref_link(msg.chat.id)
+    inv_count = await db.get_number_of_invited(msg.chat.id)
+    inv_count_with_bonus = await db.get_number_of_invited_with_bonus(msg.chat.id)
+
+    text = _('*Партнерская программа*') + '\n\n'
+    text += _('*Ваша ссылка для приглашений:*') + '\n'
+    text += f't.me/dapppp\_bot?start={ref_link}' +'\n\n'
+    text += _('*Приглашено:* ') + f'`{inv_count}`' + '\n'
+    text += _('*Из них выплачено:* ') + f'`{inv_count_with_bonus}`'
+
+    await bot.send_message(msg.chat.id, text, reply_markup=main_menu_btn())
 
 
 async def my_wallets_msg(msg):
@@ -104,7 +109,7 @@ async def my_bch_wallets(msg: CallbackQuery, bch):
         user_id = msg.message.chat.id
     else:
         user_id = msg.chat.id
-    text = _('*Мои {bch}-кошельки*\n\n').format(bch=bch.capitalize())
+    text = _('*Мои {bch}-кошельки*').format(bch=bch.capitalize()) + '\n\n'
     wallets = await db.get_user_wallets(user_id, bch)
     btn = list_wallet_inl(wallets, bch)
     if len(btn.inline_keyboard) <= 2:
@@ -114,7 +119,7 @@ async def my_bch_wallets(msg: CallbackQuery, bch):
 
 def select_bch_check(call: CallbackQuery):
     if call.data.endswith('view'):
-        return {'bch': call.data.split('_')[0]}  # (ethereum/tron)_select_bch
+        return {'bch': call.data.split('_')[0]}
 
 
 # def cancel_check(call):
@@ -167,28 +172,48 @@ def find_address_in_callback_data(call):
         return {'bch': bch, 'module': module, 'wallet_id': int(wallet_id)}
 
 
+async def view_address(bch, module, wallet_id):
+    address, name, is_subscribe = await db.get_wallet_by_id(wallet_id)
+    balance = await module.get_balance(address)
+
+    text = _('*Кошелек {bch}*').format(bch=bch.capitalize()) + '  `{}`'.format(
+        name if name else ' ') + '\n'
+    text += '`{}`'.format(address) + '\n\n'
+    text += _('*Баланс: *') + '`{}` *{}*'.format(balance, bch_token_names[bch])
+
+    return text, wallet_menu_inl(bch, wallet_id, is_subscribe)
+
+
 # отображение информации о кошельке
 @dp.callback_query_handler(find_address_in_callback_data)
 async def on_view_address(call, bch, module, wallet_id):
-    address = await db.get_address_by_id(call.message.chat.id, wallet_id)
-    balance = await module.get_balance(address)
-    text = _('*Кошелек {}*').format(bch.capitalize()) + '\n'
-    text += '`{}`'.format(address) + '\n\n'
-    text += _('*Баланс: *') + '`{}` *{}*'.format(balance, bch_token_names[bch])
-    await call.message.edit_text(text, reply_markup=wallet_menu_inl(bch, wallet_id))
+    text, btn = await view_address(bch, module, wallet_id)
+    await call.message.edit_text(text, reply_markup=btn)
+
+
+async def try_remove_addr_check(call):
+    if call.data.endswith('try_remove_address'):
+        bch, wallet_id = call.data.split('_')[:2]
+        return {'bch': bch, 'wallet_id': wallet_id}
+
+
+@dp.callback_query_handler(try_remove_addr_check)
+async def on_try_remove_address(call: CallbackQuery, bch, wallet_id):
+    await call.answer(_('Перед удалением сохраните приватный ключ'), show_alert=True)
+    text = _('Вы действительно хотите удалить кошелек?')
+    await call.message.edit_text(text, reply_markup=remove_wallet_inl(bch, wallet_id))
 
 
 async def remove_addr_check(call):
     if call.data.endswith('remove_address'):
         bch, wallet_id = call.data.split('_')[:2]
-        addr = await db.get_address_by_id(call.message.chat.id, int(wallet_id))
-        return {'bch': bch, 'address': addr}
+        return {'bch': bch, 'wallet_id': wallet_id}
 
 
 # удаление кошелька
 @dp.callback_query_handler(remove_addr_check)
-async def on_address_remove(call, bch, address):
-    await db.remove_wallet(call.message.chat.id, bch, address)
+async def on_address_remove(call, bch, wallet_id):
+    await db.remove_wallet(wallet_id)
     text, btn = await my_bch_wallets(call, bch)
     await call.message.edit_text(text, reply_markup=btn)
 
@@ -196,13 +221,12 @@ async def on_address_remove(call, bch, address):
 async def set_wallet_name_check(call):
     if call.data.endswith('set_address_name'):
         bch, wallet_id = call.data.split('_')[:2]
-        addr = await db.get_address_by_id(call.message.chat.id, int(wallet_id))
-        return {'bch': bch, 'address': addr}
+        return {'bch': bch, 'wallet_id': wallet_id}
 
 
 # предложение задать имя кошельку
 @dp.callback_query_handler(set_wallet_name_check)
-async def on_set_wallet_name(call: CallbackQuery, bch, address):
+async def on_set_wallet_name(call: CallbackQuery, bch, wallet_id):
     await call.message.delete()
     text = _('*Задайте имя кошельку*') + '\n\n'
     await bot.send_message(call.message.chat.id, text,
@@ -213,7 +237,7 @@ async def on_set_wallet_name(call: CallbackQuery, bch, address):
 
     await storage.set_state(user=call.message.chat.id, state='input_address_name')
     await storage.set_data(user=call.message.chat.id,
-                           data={'bch': bch, 'address': address})
+                           data={'bch': bch, 'wallet_id': wallet_id})
 
 
 def select_bch_check(call: CallbackQuery):
@@ -252,6 +276,9 @@ async def on_add_wallet(call: CallbackQuery, bch):
     await storage.set_state(user=call.from_user.id, state=f'{bch}_addr_input')
 
 
+# def on_input_address_check(msg):
+#    if any(state.starswith())
+
 # реакция на ввод кошелька
 @dp.message_handler(state='ethereum_addr_input')
 @dp.message_handler(state='tron_addr_input')
@@ -265,21 +292,28 @@ async def on_input_address(msg: Message, state: FSMContext):
     await bot.send_message(msg.chat.id, _('*Кошелек добавлен*'))
     await state.reset_state()
     text, btn = main_menu()
-    await bot.send_message(call.message.chat.id, text, reply_markup=btn)
+    await bot.send_message(msg.chat.id, text, reply_markup=btn)
+
+    if await db.is_bonus(msg.chat.id):
+        await bot.send_message(msg.chat.id, 'Вам бонус!')
+        await db.bonus_paid(msg.chat.id)
+        inviter_id = await db.get_user_inviter(msg.chat.id)
+        if inviter_id:
+            await bot.send_message(inviter_id, 'Вам бонус за реферала!')
 
 
 async def input_address_name_check(msg):
     data = await storage.get_data(user=msg.chat.id)
-    return {'bch': data['bch'], 'address': data['address']}
+    return {'bch': data['bch'], 'wallet_id': data['wallet_id']}
 
 
 # проверка корректности имени кошелька
 @dp.message_handler(input_address_name_check, state='input_address_name')
-async def on_input_addres_name(msg, bch, address):
+async def on_input_addres_name(msg, bch, wallet_id):
     if len(msg.text) > 20:
         await bot.send_message(msg.chat.id, _('*Неверный формат*'))
         return
-    await db.set_wallet_name(msg.chat.id, bch, address, msg.text)
+    await db.set_wallet_name(wallet_id, msg.text)
     await bot.send_message(msg.chat.id, _('Имя `{name}` задано').format(name=msg.text),
                            reply_markup=main_menu_btn())
     await storage.reset_state(user=msg.chat.id)
@@ -296,13 +330,26 @@ def private_key_check(call):
 @dp.callback_query_handler(private_key_check)
 async def on_private_key(call: CallbackQuery, bch):
     await call.message.delete()
-    text = _('Импорт приватного ключа {bch}').format(bch=bch.capitalize()) + '\n\n'
+    text = _('*Импорт приватного ключа {bch}*').format(bch=bch.capitalize()) + '\n\n'
     text += _('Вставьте приватный ключ')
-    await bot.send_message(call.from_user.id, text, reply_markup=remove_btn())
+    await bot.send_message(call.from_user.id, text, reply_markup=cancel_inl())
     await storage.set_state(user=call.from_user.id, state='import_private_key')
     await storage.set_data(user=call.message.chat.id,
                            data={'bch': bch})
 
+
+def subscribe_to_updates(call):
+    if call.data.endswith('subscribe_to_updates'):
+        bch, wallet_id = call.data.split('_')[:2]
+        module = bch_modules[bch]
+        return {'bch': bch, 'module': module, 'wallet_id': int(wallet_id)}
+
+
+@dp.callback_query_handler(subscribe_to_updates)
+async def on_subscribe_to_updates(call, bch, module, wallet_id):
+    await db.subscribe_addr_to_updates(wallet_id)
+    text, btn = await view_address(bch, module, wallet_id)
+    await call.message.edit_text(text, reply_markup=btn)
 
 def generate_wallet_check(call):
     if call.data.endswith('generate_wallet'):
@@ -331,11 +378,31 @@ async def on_input_private_key(msg):
     else:
         await db.add_bch_address_with_pkey(msg.chat.id, bch, address, msg.text)
         text = _('*Кошелек добавлен*') + '\n\n'
-        text += _('_Рекомендуется удалить сообщение с приватным ключом')
+        text += _('_Рекомендуется удалить сообщение с приватным ключом_')
         await bot.send_message(msg.chat.id, text)
         await storage.reset_state(user=msg.chat.id)
-        btn, text = main_menu()
+        text, btn = main_menu()
         await bot.send_message(msg.chat.id, text, reply_markup=btn)
 
+def pkey_link(call):
+    if call.data.endswith('view_private_key'):
+        bch, wallet_id = call.data.split('_')[:2]
+        return {'bch': bch, 'wallet_id': int(wallet_id)}
 
-executor.start_polling(dp)
+@dp.callback_query_handler(pkey_link)
+async def on_get_privatekey_link(call: CallbackQuery, bch, wallet_id):
+    try:
+        pkey = await db.get_private_key(wallet_id)
+    except PKeyNotFound:
+        await call.answer(text=_('Приватный ключ не добавлен'))
+    else:
+        pkey_link = pkey_storage.create_link(pkey)
+        print(pkey_storage.storage)
+        await call.message.edit_text(pkey_link)
+
+
+loop = asyncio.get_event_loop()
+
+loop.create_task(app_coro)
+
+executor.start_polling(dp, loop=loop)
