@@ -1,14 +1,23 @@
 msgid "Анонсы"
 msgstr "Announcements"
 
-msgid "Мои кошельки"
-msgstr "My wallets"
+msgid "Выбор блокчейна"
+msgstr "Choice of the blockchain"
+
+msgid "FAQ"
+msgstr "FAQ"
 
 msgid "Настройки"
 msgstr "Settings"
 
-msgid "Партнеры"
-msgstr ""
+msgid "Быстрая конвертация"
+msgstr "Fast convert"
+
+msgid "Мои кошельки"
+msgstr "My wallets"
+
+msgid "Залистить проект"
+msgstr "Solistice project"
 
 msgid "Сменить язык"
 msgstr "Change language"
@@ -20,53 +29,32 @@ msgid "Конвертировать"
 msgstr "Convert"
 
 msgid "Назад"
-msgstr "Back"
-
-msgid "Получать обновления: {status}"
 msgstr ""
 
 msgid "Указать имя"
-msgstr "Set name"
-
-msgid "Сделать основным"
-msgstr "Make primary"
-
-msgid "Удалить кошелек"
-msgstr "Remove wallet"
-
-msgid "Приватный ключ"
-msgstr "Private key"
-
-msgid "Нет"
 msgstr ""
 
-msgid "Да, удалить"
+msgid "Сделать основным"
+msgstr ""
+
+#, fuzzy
+msgid "Удалить кошелек"
+msgstr "Add wallet"
+
+msgid "Приватный ключ"
 msgstr ""
 
 msgid "Отмена"
-msgstr "Cancel"
+msgstr ""
 
+#, fuzzy
 msgid "Добавить адрес кошелька"
-msgstr "Add wallet address"
+msgstr "Send wallet address"
 
 msgid "Импортировать приватный ключ"
-msgstr "Import private key"
+msgstr ""
 
 msgid "Сгенерировать новый кошелек"
-msgstr "Generate new wallet"
-
-msgid ""
-"*Входящая транзакция {bch}* `{wallet_name}`\n"
-"\n"
-msgstr ""
-
-msgid "*Сумма: *"
-msgstr ""
-
-msgid "*Кому: *"
-msgstr ""
-
-msgid "*От кого: *"
 msgstr ""
 
 msgid "Главное меню"
@@ -75,106 +63,95 @@ msgstr "Main menu"
 msgid "Выберите язык"
 msgstr "Select language"
 
-msgid "*Партнерская программа*"
-msgstr ""
-
-msgid "*Ваша ссылка для приглашений:*"
-msgstr ""
-
-msgid "*Приглашено:* "
-msgstr ""
-
-msgid "*Из них выплачено:* "
-msgstr ""
-
+#, fuzzy
 msgid "*Выберите блокчейн*"
 msgstr "Select the blockchain"
 
-msgid "*Мои {bch}-кошельки*"
-msgstr "*My {bch} wallets*"
+#, fuzzy
+msgid ""
+"*Мои {bch}-кошельки*\n"
+"\n"
+msgstr "My wallets"
 
 msgid "У вас нет добавленных кошельков 😞"
-msgstr "You have not added wallets 😞"
-
-msgid "*Кошелек {bch}*"
-msgstr "*{bch} wallet*"
-
-msgid "*Баланс: *"
-msgstr "*Balance: *"
-
-#, fuzzy
-msgid "Перед удалением сохраните приватный ключ"
-msgstr "_It is recommended that you delete the private key message_"
-
-msgid "Вы действительно хотите удалить кошелек?"
 msgstr ""
 
+msgid "*Кошелек {}*"
+msgstr ""
+
+msgid "*Баланс: *"
+msgstr ""
+
+#, fuzzy
 msgid "*Задайте имя кошельку*"
-msgstr "*Name the wallet*"
+msgstr "*Add wallet*"
 
 msgid "Введите имя ниже (не более 20 символов)"
-msgstr "Enter the name below (up to 20 characters)"
+msgstr ""
 
 msgid "*Добавление кошелька*"
 msgstr "*Add wallet*"
 
+#, fuzzy
 msgid "Выберите способ добавления кошелька"
-msgstr "Choose how to add wallet"
+msgstr "*Add wallet*"
 
 msgid "Отправьте адрес кошелька"
 msgstr "Send wallet address"
 
 msgid "*Неправильный адрес*"
-msgstr "Address is not valid"
-
-msgid "*Кошелек добавлен*"
-msgstr "Wallet has been added"
-
-msgid "*Неверный формат*"
-msgstr "*Incorrect format*"
-
-msgid "Имя `{name}` задано"
-msgstr "Name `{name}` is set"
-
-#, fuzzy
-msgid "*Импорт приватного ключа {bch}*"
-msgstr "Import {bch} private key"
-
-msgid "Вставьте приватный ключ"
-msgstr "Insert private key"
-
-msgid "*Ваш новый {bch}-кошелек*"
-msgstr "*Your new {bch} wallet*"
-
-msgid "*Адрес:* "
-msgstr "*Address:* "
-
-msgid "Кошелек сохранен. Приватный ключ доступен из меню кошелька"
-msgstr "Wallet saved. The private key is available from the wallet menu"
-
-msgid "*Неверный формат приватного ключа*"
-msgstr "*Invalid private key format*"
-
-#, fuzzy
-msgid "_Рекомендуется удалить сообщение с приватным ключом_"
-msgstr "_It is recommended that you delete the private key message_"
-
-#, fuzzy
-msgid "Приватный ключ не добавлен"
-msgstr "Private key"
-
-msgid "*Токен: *"
 msgstr ""
 
-#~ msgid "Выбор блокчейна"
-#~ msgstr "Choice of the blockchain"
+msgid "*Кошелек добавлен*"
+msgstr ""
 
-#~ msgid "FAQ"
-#~ msgstr "FAQ"
+msgid "*Неверный формат*"
+msgstr ""
 
-#~ msgid "Быстрая конвертация"
-#~ msgstr "Fast convert"
+msgid "Имя `{name}` задано"
+msgstr ""
 
-#~ msgid "Залистить проект"
-#~ msgstr "Solistice project"
+msgid "Импорт приватного ключа {bch}"
+msgstr ""
+
+msgid "Вставьте приватный ключ"
+msgstr ""
+
+#, fuzzy
+msgid "*Ваш новый {bch}-кошелек*"
+msgstr "My wallets"
+
+msgid "Адрес: "
+msgstr ""
+
+msgid "Кошелек сохранен. Приватный ключ доступен из меню кошелька"
+msgstr ""
+
+msgid "*Неверный формат приватного ключа*"
+msgstr ""
+
+msgid "_Рекомендуется удалить сообщение с приватным ключом"
+msgstr ""
+
+#~ msgid "Назад"
+#~ msgstr "Back"
+
+#~ msgid "*Мои кошельки*"
+#~ msgstr "*My wallets*"
+
+#~ msgid "У вас нет добавленных кошельков 😞"
+#~ msgstr ""
+
+#~ msgid "Кошелек добавлен"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "*Добавление кошелька*\n"
+#~ "\n"
+#~ msgstr ""
+#~ "*Add wallet*\n"
+#~ "\n"
+
+#~ msgid "Выберите блокчейн"
+#~ msgstr "Select the blockchain"
 
