@@ -28,7 +28,9 @@ class DB:
         db.create_connection(*args, **kwargs)
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(db._execute("DROP TABLE users; DROP TABLE wallets;"))
+            loop.run_until_complete(db._execute("DROP TABLE users;"
+                                                " DROP TABLE wallets;"
+                                                "DROP TABLE transactions;"))
         finally:
             loop.run_until_complete(db._execute("""CREATE TABLE users (
                                                "user_id" integer NOT NULL UNIQUE,
@@ -39,6 +41,7 @@ class DB:
                                                 "ref_link" text UNIQUE,
                                                 "inviter_id" integer
                                                )"""))
+
             loop.run_until_complete(db._execute("""CREATE TABLE wallets (
                                                 "id" serial NOT NULL,
                                                 "user_id" integer NOT NULL,
@@ -47,6 +50,13 @@ class DB:
                                                 "private_key" text DEFAULT NULL,
                                                 "custom_name" text DEFAULT NULL,
                                                 "is_subscribe" boolean DEFAULT false
+                                                )"""))
+
+            loop.run_until_complete(db._execute("""CREATE TABLE transactions(
+                                                "user_id" integer,
+                                                "blockchain" text,
+                                                "count_of_trans" integer,
+                                                  PRIMARY KEY(user_id, blockchain)
                                                 )"""))
             print('ok')
             loop.run_until_complete(db.close_connect())
@@ -78,6 +88,14 @@ class DB:
         return await self._execute("""UPDATE users
                                       SET bonus_is_paid = true 
                                       WHERE user_id = $1""", user_id)
+
+    async def add_transaction(self, user_id, bch):
+        await self._execute("""INSERT INTO transactions
+                               VALUES ($1, $2, $3)
+                               ON CONFLICT(user_id, blockchain) DO UPDATE
+                               SET count_of_trans = transactions.count_of_trans + 1""",
+                               user_id, bch, 1)
+
 
     async def get_user_inviter(self, user_id):
         inviter_id = await self._fetchval("""SELECT inviter_id
@@ -212,5 +230,7 @@ class CacheDB(DB):
 
 if __name__ == '__main__':
     #DB.create_tables(**db_params)
-    # print(asyncio.get_event_loop().run_until_complete(db.is_bonus(425439946)))
+    db = CacheDB()
+    db.create_connection(**db_params)
+    print(asyncio.get_event_loop().run_until_complete(db.add_transaction(425439946, 'tron')))
     pass

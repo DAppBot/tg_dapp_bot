@@ -1,13 +1,13 @@
 import aiohttp
 import asyncio
+import base58
+import codecs
 
 from trx_utils import is_address
+from trx_utils import to_hex, encode_hex
 from tronapi import Tron
-
+from tronapi.trx import Trx
 import dapp_bot.utils as utils
-
-
-
 
 
 class TronApi:
@@ -33,7 +33,8 @@ class TronApi:
 
     async def get_token_info(self, token_id):
         print(token_id)
-        token_info = await self._request('POST', 'wallet/getassetissuebyid', value=token_id)
+        token_info = await self._request('POST', 'wallet/getassetissuebyid',
+                                         value=token_id)
         return token_info
 
     async def _get_block(self, number=None):
@@ -44,3 +45,22 @@ class TronApi:
     async def create_wallet(self):
         account = tron.create_account
         return account.address.base58, account.private_key
+
+    def from_hex(self, addr):
+        return base58.b58encode_check(bytes.fromhex(addr))
+
+    def to_hex(self, addr):
+        return codecs.encode(base58.b58decode_check(addr), 'hex').decode()
+
+    async def send_trx(self, from_address, private_key, to_address, amount):
+        account = Tron(private_key=private_key, default_address=from_address)
+        account_api = Trx(account)
+        amount_sun = amount * 1e6
+        tx = await self._request('POST', '/wallet/createtransaction',
+                                 owner_address=self.to_hex(from_address.encode()),
+                                 to_address=self.to_hex(to_address.encode()),
+                                 amount=int(amount_sun))
+
+        signed_tx = account_api.sign(tx)
+
+        r = await self._request('POST', '/wallet/broadcasttransaction', **signed_tx)

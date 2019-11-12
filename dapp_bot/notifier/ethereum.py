@@ -52,6 +52,7 @@ class EthereumNotifier:
         ws_sock = await self._connect_ws()
 
         filter_id = await self._get_filter_id(ws_sock)
+        self.logger.info('starting the notifier')
         while True:
             block_hashes = await self._get_block_hashes(ws_sock, filter_id)
 
@@ -72,7 +73,28 @@ class EthereumNotifier:
                 current_subs = subscribed_wallets.get(address, {})
                 for user_id in current_subs.keys():
                     wallet_id = current_subs[user_id]  # для получения имени кошелька
-                    await self.send_notification(user_id, wallet_id, transaction)
+                    locale, wallet_name = await self._collect_user_data(user_id,
+                                                                        wallet_id)
+                    msg_text = self._prepare_msg_text(locale, wallet_name, trans)
+                    await utils.send_notify(user_id, msg_text)
+                    self.logger.info(
+                        'Ethereum:{} notify message to {}'.format(trans['type'],
+                                                                  user_id))
+                    await db.add_transaction(user_id, 'ethereum')
+
+    async def _collect_user_data(self, user_id, wallet_id):
+        locale = await db.get_user_locale(user_id)
+        wallet_name = await db.get_wallet_name_by_id(wallet_id)
+        return locale, wallet_name
+
+    async def _prepare_msg_text(self, locale, wallet_name, transaction):
+
+        text = _('*Входящая транзакция {bch}* `{wallet_name}`\n\n', locale=locale).format(
+            bch='Ethereum', wallet_name=wallet_name)
+        text += _('*Сумма: *',
+                  locale=locale) + f'`{self.eth_api._from_wei(trans["value"])}`\n'
+        text += _('*Кому: *', locale=locale) + f'`{trans["to"]}`\n'
+        text += _('*От кого: *', locale=locale) + f'`{trans["from"]}`\n'
 
     def prepare_loop_to_start(self, loop):
         loop.create_task(self._block_getter())

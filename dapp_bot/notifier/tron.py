@@ -29,6 +29,7 @@ class TronNotifier:
         latest_block = await self.tron_api._get_block()
         num_latest_block = latest_block['block_header']['raw_data']['number']
         num_future_block = num_latest_block + 2
+        self.logger.info('starting the notifier')
         while True:
             try:
                 block = await self.tron_api._get_block(num_future_block)
@@ -57,15 +58,21 @@ class TronNotifier:
                 else:
                     continue
 
-
                 current_subs = subscribed_wallets.get(address, {})
                 for user_id in current_subs.keys():
                     wallet_id = current_subs[user_id]  # для получения имени кошелька
-                    locale, wallet_name = await self.collect_user_data(user_id, wallet_id)
+                    locale, wallet_name = await self._collect_user_data(user_id,
+                                                                        wallet_id)
                     msg_text = self._prepare_msg_text(locale, wallet_name, trans)
                     await utils.send_notify(user_id, msg_text)
-                    self.logger.info('{} notify message to {}'.format(trans['type'],
-                                                                      user_id))
+                    self.logger.info('Tron{} notify message to {}'.format(trans['type'],
+                                                                          user_id))
+                    await db.add_transaction(user_id, 'ethereum')
+
+    async def _collect_user_data(self, user_id, wallet_id):
+        locale = await db.get_user_locale(user_id)
+        wallet_name = await db.get_wallet_name_by_id(wallet_id)
+        return locale, wallet_name
 
     def _prepare_msg_text(self, locale, wallet_name, transaction):
         text = _('*Входящая транзакция {bch}* `{wallet_name}`\n\n',
