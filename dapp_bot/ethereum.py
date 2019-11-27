@@ -6,9 +6,7 @@ from copy import deepcopy
 from eth_account import Account
 from eth_utils import from_wei
 from eth_utils.address import is_address
-from middleware.i18n import i18n
 
-import utils
 
 class EthereumApi:
 
@@ -66,53 +64,8 @@ class EthereumApi:
     async def connect_ws(self):
         self.ws_sock = await self.ws_session.ws_connect(self.ws_api)
 
-    async def subcribe_to_updates(self):
-        asyncio.get_running_loop().create_task(self._process_block_hash())
-        await self.connect_ws()
-        data = self._create_req('eth_newBlockFilter')
-        await self.ws_sock.send_json(data)
+    async def call_contract(self, address, ):
 
-        filter = (await self.ws_sock.receive_json())['result']
-
-        while True:
-            data = self._create_req('eth_getFilterChanges', filter)
-            await self.ws_sock.send_json(data)
-            try:
-                result = await self.ws_sock.receive_json()
-            except TypeError:
-                continue
-            if result.get('result'):
-                for block_hash in result['result']:
-                    await self.block_hash_q.put(block_hash)
-
-            await asyncio.sleep(0.2)
-
-    async def _process_block_hash(self):
-        while True:
-            block_hash = await self.block_hash_q.get()
-            block = await self.eth_getBlockByHash(block_hash, True)
-
-            subscribers = await self.db.get_subscribes_wallets('ethereum')
-            subscribed_wallets = utils.build_structure_subscribers(subscribers, True)
-
-            for transaction in block['transactions']:
-                address = transaction['to']
-                current_subs = subscribed_wallets.get(address, {})
-                for user_id in current_subs.keys():
-                    wallet_id = current_subs[user_id]  # для получения имени кошелька
-                    await self.send_notification(user_id, wallet_id, transaction)
-
-    async def send_notification(self, user_id, wallet_id, trans):
-        locale = await self.db.get_user_locale(user_id)
-        wallet_name = await self.db.get_wallet_name_by_id(wallet_id) or ''
-
-        text = _('*Входящая транзакция {bch}* `{wallet_name}`\n\n', locale=locale).format(
-            bch='Ethereum', wallet_name=wallet_name)
-        text += _('*Сумма: *', locale=locale) + f'`{self._from_wei(trans["value"])}`\n'
-        text += _('*Кому: *', locale=locale) + f'`{trans["to"]}`\n'
-        text += _('*От кого: *', locale=locale) + f'`{trans["from"]}`\n'
-
-        await self.bot.send_message(user_id, text)
 
 
 if __name__ == '__main__':
@@ -120,6 +73,3 @@ if __name__ == '__main__':
 
     eth = EthereumApi('9d968cd7361a4c64acf5dedbec1ec48f')
 
-    loop.run_until_complete(eth.connect_ws())
-    loop.create_task(eth._process_block_hash())
-    print(loop.run_until_complete(eth.subcribe_to_updates()))

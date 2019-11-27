@@ -10,8 +10,6 @@ class DB:
 
     async def _create_connection(self, *args, **kwargs):
         self.connect_poll = await asyncpg.create_pool(*args, **kwargs)
-        self._is_connect = True
-
 
     def create_connection(self, *args, **kwargs):
         kwargs = db_params
@@ -75,14 +73,19 @@ class DB:
 
     async def is_bonus(self, user_id):
         result = await self._fetchval(
-            'SELECT bonus_is_paid = false and '
-            '(SELECT COUNT(DISTINCT(blockchain)) >= 2 FROM wallets WHERE user_id = $1) '
-            'FROM users WHERE user_id = $1', user_id)
+            """SELECT bonus_is_paid = false and 
+               (SELECT COUNT(DISTINCT(blockchain)) >= 2 
+                    FROM wallets WHERE user_id = $1) and 
+               (SELECT COUNT(DISTINCT(blockchain)) = 2 
+                    FROM transactions WHERE user_id = $1) 
+               FROM users WHERE user_id = $1""", user_id)
         return result[0] if result else False
 
     async def get_ref_link(self, user_id):
-        return (await self._fetchval('SELECT ref_link FROM users WHERE user_id = $1',
-                                    user_id))[0]
+        ref_link = (await self._fetchval('SELECT ref_link FROM users WHERE user_id = $1',
+                                    user_id))
+        return ref_link[0] if ref_link else None
+
 
     async def bonus_paid(self, user_id):
         return await self._execute("""UPDATE users

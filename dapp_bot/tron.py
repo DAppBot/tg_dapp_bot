@@ -16,21 +16,23 @@ class TronApi:
         self.tron = Tron()
         self.api = 'https://api.trongrid.io/'
         self.session = aiohttp.ClientSession(conn_timeout=3600)
-        self.block_q = asyncio.Queue()
 
     async def _request(self, method, endpoint, **params):
         async with self.session.request(method, self.api + endpoint, json=params) as r:
             return await r.json(content_type='')
 
     def is_address(self, addr):
-        return is_address(addr)
+        try:
+            return is_address(addr)
+        except:
+            return False
 
     async def get_balance(self, addr):
         account = await self._request('POST', 'wallet/getaccount',
-                                      address=str(tron.address.to_hex(addr)))
+                                      address=str(self.tron.address.to_hex(addr)))
         if 'balance' not in account:
             return 0
-        return tron.fromSun(account['balance'])
+        return self.tron.fromSun(account['balance'])
 
     async def get_token_info(self, token_id):
         token_info = await self._request('POST', 'wallet/getassetissuebyid',
@@ -43,7 +45,7 @@ class TronApi:
         return await self._request('POST', 'wallet/getblockbynum', num=number)
 
     async def create_wallet(self):
-        account = tron.create_account
+        account = self.tron.create_account
         return account.address.base58, account.private_key
 
     def from_hex(self, text):

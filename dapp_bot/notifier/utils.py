@@ -17,4 +17,4 @@ def build_structure_subscribers(subscribers, addr_to_lower=False):
 
 
 async def send_notify(user_id, msg_text):
-    await bot.send_message(user_id, msg_text)
+    await bot.send_message(user_id, msg_text, parse_mode='Markdown')

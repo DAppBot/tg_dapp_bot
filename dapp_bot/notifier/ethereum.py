@@ -17,7 +17,7 @@ db.create_connection()
 class EthereumNotifier:
     def __init__(self):
         log_format = '%(levelname)s:%(name)s:%(asctime)s  %(message)s'
-        logging.basicConfig(filename='log.txt', format=log_format)
+        # logging.basicConfig(filename='log.txt', format=log_format)
         self.logger = logging.getLogger('ethereum_notifier')
         self.logger.setLevel(logging.INFO)
 
@@ -75,26 +75,29 @@ class EthereumNotifier:
                     wallet_id = current_subs[user_id]  # для получения имени кошелька
                     locale, wallet_name = await self._collect_user_data(user_id,
                                                                         wallet_id)
-                    msg_text = self._prepare_msg_text(locale, wallet_name, trans)
+                    msg_text = await self._prepare_msg_text(locale,
+                                                            wallet_name,
+                                                            transaction)
                     await utils.send_notify(user_id, msg_text)
                     self.logger.info(
-                        'Ethereum:{} notify message to {}'.format(trans['type'],
-                                                                  user_id))
+                        'Ethereum: notify message to {}'.format(user_id))
                     await db.add_transaction(user_id, 'ethereum')
 
     async def _collect_user_data(self, user_id, wallet_id):
         locale = await db.get_user_locale(user_id)
         wallet_name = await db.get_wallet_name_by_id(wallet_id)
-        return locale, wallet_name
+        return locale, wallet_name or ''
 
     async def _prepare_msg_text(self, locale, wallet_name, transaction):
 
         text = _('*Входящая транзакция {bch}* `{wallet_name}`\n\n', locale=locale).format(
             bch='Ethereum', wallet_name=wallet_name)
-        text += _('*Сумма: *',
-                  locale=locale) + f'`{self.eth_api._from_wei(trans["value"])}`\n'
-        text += _('*Кому: *', locale=locale) + f'`{trans["to"]}`\n'
-        text += _('*От кого: *', locale=locale) + f'`{trans["from"]}`\n'
+        text += _('*Сумма: *', locale=locale) + '`{:.8f}`\n'.format(
+                        self.eth_api._from_wei(transaction["value"])).rstrip('0').rstrip('.')
+        text += _('*Кому: *', locale=locale) + f'`{transaction["to"]}`\n'
+        text += _('*От кого: *', locale=locale) + f'`{transaction["from"]}`\n'
+        print(text)
+        return text
 
     def prepare_loop_to_start(self, loop):
         loop.create_task(self._block_getter())

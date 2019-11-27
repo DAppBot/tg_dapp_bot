@@ -18,3 +18,6 @@ db_params = dict(config['db'])
 
 token = config['bot']['token']
 
+bonus_addr = config['bonus_tron_account']['address']
+bonus_pkey = config['bonus_tron_account']['private_key']
+
