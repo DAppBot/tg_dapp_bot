@@ -11,9 +11,15 @@ from dapp_bot.config import get_root_path
 
 
 class CustomI18n(I18nMiddleware):
+    def __init__(self, **kwargs):
+        super().__init__(domain='bot',
+                         path=kwargs.get('path') or get_root_path(),
+                         default=kwargs.get('domain') or 'ru')
+
     async def get_user_locale(self, action, args) -> str:
         user = User.get_current()
         db = dp.get_current()['db']
+
         try:  # пробуем достать локаль из базы
             return await db.get_user_locale(user.id)
         except LocaleNotFound:  # возвращаем локаль, которую вернул телеграм
@@ -24,5 +30,5 @@ class CustomI18n(I18nMiddleware):
     def lazy_gettext(self, *args):
         return LazyProxy(self.gettext, *args, enable_cache=False)
 
-i18n = CustomI18n('bot', path=get_root_path())
+
 

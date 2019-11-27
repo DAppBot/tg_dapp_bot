@@ -1,7 +1,7 @@
 import asyncio
+import functools
 
 from aiogram import Bot, Dispatcher, executor
-# from aiogram.dispatcher.filters.state import StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, CallbackQuery, ChatType
@@ -13,96 +13,65 @@ from buttons import *
 from ethereum import EthereumApi
 from exceptions import *
 from db import CacheDB
-from middleware.i18n import i18n
+from middleware.i18n import CustomI18n
 from tron import TronApi
 from backend.storage import pkey_storage
 from backend.app import app_coro
 from cb_helper import cb_filter
 
-bot = Bot(config.token, parse_mode='markdown')
-storage = MemoryStorage()
 
-dp = Dispatcher(bot, storage=storage)
+class ModifiedDispatcher(Dispatcher):
+    def _prepare_cb(self, cb, cb_args):
+        return functools.partial(cb, *cb_args)
 
-# для работы локализации
-_, __ = i18n.gettext, i18n.lazy_gettext
-dp.middleware.setup(i18n)
+    def register_message_handler(self, cb, cb_args, *custom_filters, **kwargs):
+        super().register_message_handler(self._prepare_cb(cb, cb_args),
+                                         *custom_filters, **kwargs)
 
-# подключение к базе
-db = CacheDB()
-db.create_connection(**config.db_params)
-dp['db'] = db
-# db.create_tables(**db_params)
-
-eth = EthereumApi()
-trx = TronApi()
-
-list_bch = ['ethereum', 'tron']
-bch_modules = {'ethereum': eth,
-               'tron': trx}
-
-bch_token_names = {'ethereum': 'ETH',
-                   'tron': 'TRX'}
+    def register_callback_query_handler(self, cb, cb_args, *custom_filters, **kwargs):
+        super().register_callback_query_handler(self._prepare_cb(cb, cb_args),
+                                                *custom_filters, **kwargs)
 
 
-@dp.message_handler(ChatType.is_private, commands=['start'])
-async def on_start_msg(msg: Message):
-    new_ref_link = utils.encode_to_base64(msg.chat.id).lower()
-
-    try:
-        await db.save_new_user(msg.from_user.id,
-                               msg.from_user.first_name,
-                               msg.from_user.username,
-                               new_ref_link, inv_link=msg.get_args() or None)
-    except ExistingUser:  # пользователь существует
-        text, btn = main_menu()
-        await bot.send_message(msg.chat.id, text, reply_markup=btn)
-    else:  # новый пользователь
-        await select_language(msg)
+async def connect_to_db(*, recreate_tables=False, **params):
+    db = CacheDB()
+    db.create_connection(**params)
+    if recreate_tables:
+        db.create_tables()
+    return db
 
 
-def main_menu():
-    return _('Главное меню'), main_menu_btn()
+async def main():
+    bot = Bot(config.token, parse_mode='markdown')
+    storage = MemoryStorage()
+    dp = ModifiedDispatcher(bot, storage=storage)
+
+    db = await connect_to_db(**config.db_params)
+
+    # для работы локализации
+    dp['db'] = db
+    i18n = CustomI18n(domain='bot')
+    _, __ = i18n.gettext, i18n.lazy_gettext
+    dp.middleware.setup(i18n)
+
+    # интерфейсы к блокчейнам
+    eth = EthereumApi()
+    trx = TronApi()
+
+    list_bch = ['ethereum', 'tron']
+    bch_modules = {'ethereum': eth,
+                   'tron': trx}
+    bch_token_names = {'ethereum': 'ETH',
+                       'tron': 'TRX'}
+
+    await register_handlers(_, __, bot=bot, storage=storage, dp=dp,
+                            db=db, eth=eth, trx=trx)
 
 
-async def select_language(msg):
-    await bot.send_message(msg.chat.id, _('Выберите язык'),
-                           reply_markup=lang_select_inl())
-
-
-@dp.message_handler(text=__('Мои кошельки'))
-async def on_wallets_btn(msg: Message):
-    text, btn = await my_wallets_msg(msg)
-    await bot.send_message(msg.chat.id, text, reply_markup=btn)
-
-
-@dp.message_handler(text=__('Настройки'))
-async def on_settings_btn(msg: Message):
-    await bot.send_message(msg.chat.id, _('Настройки'), reply_markup=settings_btn())
-
-
-@dp.message_handler(text=__('Сменить язык'))
-async def on_settings_btn(msg: Message):
-    await select_language(msg)
-
-
-@dp.message_handler(text=__('Партнеры'))
-async def on_partner_btn(msg):
-    ref_link = await db.get_ref_link(msg.chat.id)
-    inv_count = await db.get_number_of_invited(msg.chat.id)
-    inv_count_with_bonus = await db.get_number_of_invited_with_bonus(msg.chat.id)
-
-    text = _('*Партнерская программа*') + '\n\n'
-    text += _('*Ваша ссылка для приглашений:*') + '\n'
-    text += f't.me/dapppp\_bot?start={ref_link}' + '\n\n'
-    text += _('*Приглашено:* ') + f'`{inv_count}`' + '\n'
-    text += _('*Из них выплачено:* ') + f'`{inv_count_with_bonus}`'
-
-    await bot.send_message(msg.chat.id, text, reply_markup=main_menu_btn())
-
-
-async def my_wallets_msg(msg):
-    return _('*Выберите блокчейн*'), select_bch_inl()
+def register_handlers(_, __, **kwargs):
+    from handlers import main
+    main.reg_handlers(_, __, **kwargs)
+    from handlers import wallets
 
 
 async def my_bch_wallets(msg: CallbackQuery, bch):
@@ -118,24 +87,10 @@ async def my_bch_wallets(msg: CallbackQuery, bch):
     return text, btn
 
 
-# отмена любого действия
-@dp.callback_query_handler(lambda c: c.data == 'cancel', state='*')
-async def on_cancel(call: CallbackQuery):
-    await call.message.delete()
-    text, btn = main_menu()
-    await bot.send_message(call.message.chat.id, text, reply_markup=btn)
-    await storage.reset_state(user=call.message.chat.id)
 
 
-# список языков, доступных к выбору
-@dp.callback_query_handler(lambda c: c.data in ['ru', 'en'])  # выбор языка
-async def on_select_lang(call: CallbackQuery):
-    await db.set_user_locale(call.from_user.id, call.data)
-    # устанавливаем локаль явно
-    i18n.ctx_locale.set(call.data)
-    await call.message.delete()
-    text, btn = main_menu()
-    await bot.send_message(call.message.chat.id, text, reply_markup=btn)
+
+
 
 
 # выбор блокчейна, кошельки которого хотим посмотреть

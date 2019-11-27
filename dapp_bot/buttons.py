@@ -5,9 +5,10 @@ from aiogram.types.inline_keyboard import (InlineKeyboardButton,
 from aiogram.types.reply_keyboard import ReplyKeyboardMarkup
 from aiogram.types.reply_keyboard import ReplyKeyboardRemove
 
-from middleware.i18n import i18n
+from middleware.i18n import CustomI18n
 from utils import reduction_addr
 
+i18n = CustomI18n(domain='bot')
 _ = i18n.gettext
 
 def main_menu_btn():
