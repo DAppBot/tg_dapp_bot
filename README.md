@@ -2,6 +2,8 @@
 
 This telegram bot allows the user to easily and conveniently communicate with blockchains
 
+Working on the project: 2017-2018
+
 ## Features:
 - supporting for **two** blockchains: `Tron` and `Ethereum`
 - wallet manager
@@ -23,3 +25,4 @@ This telegram bot allows the user to easily and conveniently communicate with bl
 - [`eth_utils`](https://github.com/ethereum/eth-utils) - to work with the Ethereum ecosystem (address validating, `base58` encoding/decoding, `ABI` decoding)
 - [`tronapi`](https://github.com/iexbase/tron-api-python) - to create Tron wallets
 - [`trx_utils`](https://github.com/iexbase/trx-utils) - to work with the Ethereum ecosystem (the Tron blockchain is similar to Ethereum, so everything is almost similar)
+
